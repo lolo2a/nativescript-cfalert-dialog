@@ -34,6 +34,7 @@ export interface DialogOptions {
     messageColor?: string;
     textColor?: string;
     textAlignment?: CFAlertGravity;
+    delay?: number;
     backgroundColor?: string;
     backgroundBlur?: boolean; // iOS only
     cancellable?: boolean;
@@ -107,13 +108,17 @@ class Listener implements android.content.DialogInterface.OnClickListener {
 }
 
 export class CFAlertDialog {
+    private dialog:any;
+    private timeoutPtr;
+
     public show(options: DialogOptions) {
         options = options || {
             title: "Hello World",
             dialogStyle: alertStyle
         };
-
+        this.reset();
         const builder = new Builder(app.android.foregroundActivity);
+        const that = this;
 
         if (typeof options.dialogStyle !== undefined) {
             builder.setDialogStyle(styles[options.dialogStyle]);
@@ -161,6 +166,7 @@ export class CFAlertDialog {
                     alignment[button.buttonAlignment],
                     new android.content.DialogInterface.OnClickListener({
                         onClick: function(dialog, which) {
+                            that.reset();
                             button.onClick(button.text);
                             dialog.dismiss();
                         }
@@ -213,6 +219,7 @@ export class CFAlertDialog {
         }
 
         const alertDialog = builder.show();
+        this.dialog = alertDialog;
 
         if (options.titleColor) {
             alertDialog.setTitleColor(new Color(options.titleColor).android);
@@ -226,10 +233,34 @@ export class CFAlertDialog {
             alertDialog.setOnDismissListener(
                 new android.content.DialogInterface.OnDismissListener({
                     onDismiss: function() {
+                        that.reset();
                         options.onDismiss();
                     }
                 })
             );
         }
+
+        if (options.delay)
+        {
+            this.timeoutPtr = setTimeout(() => { that.hide(); }, options.delay);
+        }
+
     }
+
+    private reset(): void
+    {
+        this.dialog = null;
+        if (this.timeoutPtr > 0) clearTimeout(this.timeoutPtr);
+        this.timeoutPtr = 0;
+    }
+    
+    hide(): void
+    {
+        if (this.dialog)
+            this.dialog.dismiss();
+
+        this.reset();
+    }
+
+
 }

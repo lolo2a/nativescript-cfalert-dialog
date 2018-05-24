@@ -28,6 +28,7 @@ export interface DialogOptions {
     messageColor?: string;
     textColor?: string;
     textAlignment?: CFAlertGravity;
+    delay?: number;
     backgroundColor?: string;
     backgroundBlur?: boolean;
     cancellable?: boolean;
@@ -59,4 +60,5 @@ export interface DialogOptions {
 }
 export declare class CFAlertDialog {
     show(options: any): void;
+    hide(): void;
 }

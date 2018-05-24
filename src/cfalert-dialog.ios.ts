@@ -42,6 +42,7 @@ export interface DialogOptions {
     messageColor?: string;
     textColor?: string;
     textAlignment?: CFAlertGravity;
+    delay?: number;
     backgroundColor?: string;
     backgroundBlur?: boolean;
     cancellable?: boolean;
@@ -64,7 +65,14 @@ export interface DialogOptions {
 }
 
 export class CFAlertDialog {
+    private dialog:any;
+    private timeoutPtr;
+
     public show(options: DialogOptions) {
+
+        this.reset();
+        const that = this;
+
         if (
             options.simpleList ||
             options.singleChoiceList ||
@@ -85,6 +93,7 @@ export class CFAlertDialog {
         if (typeof options.textAlignment === undefined)
             options.textAlignment = CFAlertGravity.START;
 
+
         const viewController = frame.topmost().currentPage.ios;
         const alertController = CFAlertViewController.alloc().initWithTitleTitleColorMessageMessageColorTextAlignmentPreferredStyleHeaderViewFooterViewDidDismissAlertHandler(
             options.title,
@@ -96,9 +105,12 @@ export class CFAlertDialog {
             options.headerView,
             options.footerView,
             () => {
+                that.reset();
                 if (options.onDismiss) options.onDismiss();
             }
         );
+
+        this.dialog = alertController;
 
         if (options.backgroundBlur) {
             alertController.backgroundStyle =
@@ -129,6 +141,7 @@ export class CFAlertDialog {
                     btnOpts.backgroundColor,
                     btnOpts.textColor,
                     action => {
+                        that.reset();
                         btnOpts.onClick(action.title);
                     }
                 );
@@ -139,7 +152,27 @@ export class CFAlertDialog {
         viewController.presentViewControllerAnimatedCompletion(
             alertController,
             true,
-            null
+            () => {
+                if (options.delay)
+                {
+                    that.timeoutPtr = setTimeout(() => { that.hide(); }, options.delay);
+                }
+            }
         );
+    }
+
+    private reset(): void
+    {
+        this.dialog = null;
+        if (this.timeoutPtr > 0) clearTimeout(this.timeoutPtr);
+        this.timeoutPtr = 0;
+    }
+    
+    hide(): void
+    {
+        if (this.dialog)
+            this.dialog.dismissAlertWithAnimationCompletion(true, () => {});
+
+        this.reset();
     }
 }
